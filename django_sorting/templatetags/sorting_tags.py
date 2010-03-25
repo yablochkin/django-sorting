@@ -1,18 +1,21 @@
 from django import template
-from django.http import Http404
 from django.conf import settings
+from django.http import Http404
+from django.template import TemplateSyntaxError
 
 register = template.Library()
 
 DEFAULT_SORT_UP = getattr(settings, 'DEFAULT_SORT_UP' , '&uarr;')
 DEFAULT_SORT_DOWN = getattr(settings, 'DEFAULT_SORT_DOWN' , '&darr;')
-INVALID_FIELD_RAISES_404 = getattr(settings, 
+INVALID_FIELD_RAISES_404 = getattr(settings,
         'SORTING_INVALID_FIELD_RAISES_404' , False)
 
+SORTING_NOFOLLOW = getattr(settings, 'SORTING_NOFOLLOW', True)
+
 sort_directions = {
-    'asc': {'icon':DEFAULT_SORT_UP, 'inverse': 'desc'}, 
-    'desc': {'icon':DEFAULT_SORT_DOWN, 'inverse': 'asc'}, 
-    '': {'icon':DEFAULT_SORT_DOWN, 'inverse': 'asc'}, 
+    'asc': {'icon':DEFAULT_SORT_UP, 'inverse': 'desc'},
+    'desc': {'icon':DEFAULT_SORT_DOWN, 'inverse': 'asc'},
+    '': {'icon':DEFAULT_SORT_DOWN, 'inverse': 'asc'},
 }
 
 def anchor(parser, token):
@@ -73,7 +76,10 @@ class SortAnchorNode(template.Node):
             title = self.title
 
         url = '%s?sort=%s%s' % (request.path, self.field, urlappend)
-        return '<a href="%s" title="%s">%s</a>' % (url, self.title, title)
+        if SORTING_NOFOLLOW:
+            return '<a href="%s" title="%s" rel="nofollow">%s</a>' % (url, self.title, title)
+        else:
+            return '<a href="%s" title="%s">%s</a>' % (url, self.title, title)
 
 
 def autosort(parser, token):
@@ -99,7 +105,7 @@ class SortedDataNode(template.Node):
                 context[key] = value.order_by(order_by)
             except template.TemplateSyntaxError:
                 if INVALID_FIELD_RAISES_404:
-                    raise Http404('Invalid field sorting. If DEBUG were set to ' +
+                    raise Http404('Invalid field sorting. If DEBUG were set to ' + 
                     'False, an HTTP 404 page would have been shown instead.')
                 context[key] = value
         else:
