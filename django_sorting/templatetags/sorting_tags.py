@@ -3,6 +3,7 @@ from django.conf import settings
 from django.http import Http404
 from django.template import TemplateSyntaxError
 from django.utils.translation import ugettext as _
+from django.core.exceptions import FieldError
 
 register = template.Library()
 
@@ -125,6 +126,8 @@ class SortedDataNode(template.Node):
         self.context_var = context_var
 
     def render(self, context):
+        import pdb
+
         if self.context_var is not None:
             key = self.context_var
         else:
@@ -134,10 +137,7 @@ class SortedDataNode(template.Node):
         if len(order_by) > 1:
             try:
                 context[key] = value.order_by(order_by)
-            except template.TemplateSyntaxError:
-                if INVALID_FIELD_RAISES_404:
-                    raise Http404('Invalid field sorting. If DEBUG were set to ' + 
-                    'False, an HTTP 404 page would have been shown instead.')
+            except (template.TemplateSyntaxError, FieldError), e:
                 context[key] = value
         else:
             context[key] = value
