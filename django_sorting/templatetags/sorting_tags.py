@@ -9,8 +9,6 @@ register = template.Library()
 
 DEFAULT_SORT_UP = getattr(settings, 'DEFAULT_SORT_UP' , '&uarr;')
 DEFAULT_SORT_DOWN = getattr(settings, 'DEFAULT_SORT_DOWN' , '&darr;')
-INVALID_FIELD_RAISES_404 = getattr(settings,
-        'SORTING_INVALID_FIELD_RAISES_404' , False)
 
 SORTING_NOFOLLOW = getattr(settings, 'SORTING_NOFOLLOW', True)
 
@@ -29,7 +27,6 @@ def anchor(parser, token):
     if len(bits) < 2:
         raise template.TemplateSyntaxError, "anchor tag takes at least 1 argument"
 
-    title_is_var = False
     try:
         title = bits[2]
         if title[0] in ('"', "'"):
@@ -39,12 +36,10 @@ def anchor(parser, token):
                 raise TemplateSyntaxError, 'anchor tag title must be a "string", _("trans string"), or variable'
         elif title.startswith('_("') or title.startswith("_('"):
             title = _(title[3:-2])
-        else:
-            title_is_var = True
 
     except IndexError:
         title = bits[1].capitalize()
-    return SortAnchorNode(bits[1].strip(), title.strip(), title_is_var)
+    return SortAnchorNode(bits[1].strip(), title.strip())
     
 
 class SortAnchorNode(template.Node):
@@ -59,14 +54,16 @@ class SortAnchorNode(template.Node):
         <a href="/the/current/path/?sort=name" title="Name">Name</a>
 
     """
-    def __init__(self, field, title, title_is_var):
+    def __init__(self, field, title):
         self.field = field
         self.title = title
-        self.title_is_var = title_is_var
 
     def render(self, context):
-        if self.title_is_var:
-            self.title = context[self.title]
+        try:
+            self.title = template.Variable(self.title).resolve(context)
+        except template.VariableDoesNotExist:
+            pass
+            
         request = context['request']
         getvars = request.GET.copy()
         if 'sort' in getvars:
