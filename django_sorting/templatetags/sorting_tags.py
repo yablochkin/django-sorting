@@ -1,6 +1,5 @@
 from django import template
 from django.conf import settings
-from django.http import Http404
 from django.template import TemplateSyntaxError
 from django.utils.translation import ugettext as _
 from django.core.exceptions import FieldError
@@ -123,8 +122,6 @@ class SortedDataNode(template.Node):
         self.context_var = context_var
 
     def render(self, context):
-        import pdb
-
         if self.context_var is not None:
             key = self.context_var
         else:
