@@ -60,7 +60,7 @@ class SortAnchorNode(template.Node):
     def render(self, context):
         try:
             self.title = template.Variable(self.title).resolve(context)
-        except template.VariableDoesNotExist:
+        except (template.VariableDoesNotExist, UnicodeEncodeError):
             pass
             
         request = context['request']
